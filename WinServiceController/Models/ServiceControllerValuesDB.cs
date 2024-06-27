@@ -21,7 +21,7 @@ namespace WinServiceController.Models
         public bool CanPauseAndContinue { get; set; }
         public bool CanShutdown { get; set; }
         public bool CanStop { get; set; }
-        private ServiceController[] _DependentServices;
+        private ServiceController[]? _DependentServices;
         public string DependentServices
         {
             get
@@ -32,13 +32,20 @@ namespace WinServiceController.Models
 
         public string DisplayName { get; set; }
         public string MachineName { get; set; }
-        public SafeHandle? ServiceHandle { get; set; }
+        private SafeHandle? _ServiceHandle;
+        public string ServiceHandle
+        {
+            get
+            {
+                return (GetStringFromServiceHandle(_ServiceHandle));
+            }
+        }
         public string ServiceName { get; set; }
 
         private ServiceController[] _ServicesDependedOn;
-        public string ServicesDependedOn 
+        public string ServicesDependedOn
         {
-            get 
+            get
             {
                 return GetStringFromServiceController(_ServicesDependedOn);
             }
@@ -46,7 +53,33 @@ namespace WinServiceController.Models
 
         public ServiceType ServiceType { get; set; }
         public ISite? Site { get; set; }
-        public ServiceStartMode StartType { get; set; }
+        private ServiceStartMode _StartType;
+        public string StartType
+        {
+            get
+            {
+                string retval = "unknown";
+                switch (_StartType)
+                {
+                    case (ServiceStartMode.Boot):
+                        retval = "Драйвер, при загрузке";
+                        break;
+                    case (ServiceStartMode.Automatic):
+                        retval = "Автоматически";
+                        break;
+                    case (ServiceStartMode.Disabled):
+                        retval = "Отключено";
+                        break;
+                    case (ServiceStartMode.Manual):
+                        retval = "Вручную";
+                        break;
+                    case (ServiceStartMode.System):
+                        retval = "Система";
+                        break;
+                }
+                return retval;
+            }
+        }
         public ServiceControllerStatus Status { get; set; }
 
         public ServiceControllerValuesDB(ServiceController scs, int i)
@@ -60,50 +93,71 @@ namespace WinServiceController.Models
             CanPauseAndContinue = sc.CanPauseAndContinue;
             CanShutdown = sc.CanShutdown;
             CanStop = sc.CanStop;
-            _DependentServices = sc.DependentServices;
+            try
+            {
+                _DependentServices = sc.DependentServices;
+            }
+            catch
+            {
+                _DependentServices = null;
+            }
             DisplayName = sc.DisplayName;
             MachineName = sc.MachineName;
             try
             {
-                ServiceHandle = sc.ServiceHandle;
+                _ServiceHandle = sc.ServiceHandle;
             }
             catch
             {
-                ServiceHandle = null;
+                _ServiceHandle = null;
             }
             ServiceType = sc.ServiceType;
             ServiceName = sc.ServiceName;
             _ServicesDependedOn = sc.ServicesDependedOn;
             ServiceType = sc.ServiceType;
             Site = sc.Site;
-            StartType = sc.StartType;
+            _StartType = sc.StartType;
             Status = sc.Status;
         }
 
-        private string GetStringFromServiceController(ServiceController[] scs)
+        private string GetStringFromServiceController(ServiceController[]? scs)
         {
             string retval = "";
-            int i = 0;
-            foreach (ServiceController sc in scs)
+            if (scs != null)
             {
-                if (retval != "")
+                int i = 0;
+                foreach (ServiceController sc in scs)
                 {
-                    retval += ";";
-                    if ((i % 2) == 0)
+                    if (retval != "")
+                    {
+                        retval += "; ";
+                        if ((i % 2) == 0)
+                        {
+                            retval += Environment.NewLine;
+                        }
+                    }
+                    if (i < 20) retval += sc.DisplayName;
+                    else
                     {
                         retval += Environment.NewLine;
+                        retval += "...more than 20 services";
+                        break;
                     }
+                    i++;
                 }
-                if (i<20) retval += sc.DisplayName;
-                else 
-                {
-                    retval += Environment.NewLine;
-                    retval += "...more than 20 services";
-                    break;
-                }
-                i++;
             }
             return retval;
         }
+
+        private string GetStringFromServiceHandle(SafeHandle? serviceHandle)
+        {
+            string retval = "";
+            if (serviceHandle != null)
+            {
+                retval = serviceHandle.DangerousGetHandle().ToString();
+            }
+            return retval;
+        }
+
     }
 }
