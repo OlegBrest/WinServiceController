@@ -80,16 +80,30 @@ namespace WinServiceController.Models
                 return retval;
             }
         }
-        public ServiceControllerStatus Status { get; set; }
 
-        public ServiceControllerValuesDB(ServiceController scs, int i)
+        private ServiceControllerStatus _Status;
+        public ServiceControllerStatus Status
+        {
+            get { return _Status; }
+            set
+            {
+                _Status = value;
+                onPropertyChanged("Status");
+            }
+        }
+
+        public ServiceControllerValuesDB(ServiceController scs, int i = -1)
         {
             import(scs, i);
         }
 
-        public void import(ServiceController sc, int i = 0)
+        public void import(ServiceController sc, int i = -1)
         {
-            Id = i;
+            if (i == -1) Id++;
+            else
+            {
+                Id = i;
+            }
             CanPauseAndContinue = sc.CanPauseAndContinue;
             CanShutdown = sc.CanShutdown;
             CanStop = sc.CanStop;
@@ -158,6 +172,5 @@ namespace WinServiceController.Models
             }
             return retval;
         }
-
     }
 }

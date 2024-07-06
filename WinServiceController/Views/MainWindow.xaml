@@ -6,24 +6,35 @@
         xmlns:local="clr-namespace:WinServiceController"
         mc:Ignorable="d"
         xmlns:vm="clr-namespace:WinServiceController.ViewModels"
-        Title="Контроллер процессов и автозапуска" Height="450" Width="800">
+        Title="Контроллер служб, процессов и автозапуска" Height="450" Width="800">
     <Window.DataContext>
         <vm:MainVM></vm:MainVM>
     </Window.DataContext>
     <Grid>
-        <TabControl Name="MainTab" Background="#FFE5E5E5" Grid.Row="1">
-            <TabItem Header="Процессы" Name="ServicesTab">
-                <DataGrid Name="ServicesDataGrid" Margin="0,0,0,4" EnableRowVirtualization="True" ItemsSource="{Binding serviceControllerValuesDB}" 
-                              AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" ScrollViewer.CanContentScroll="True" SelectedItem="{Binding serviceControllerValuesDB}">
-                    <DataGrid.Resources>
-                        <Style TargetType="{x:Type DataGridCell}">
-                            <Style.Triggers>
-                                <DataTrigger Binding ="{Binding Status}" Value="Stopped">
-                                    <Setter Property="Background" Value="#FFFFCCCC" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </DataGrid.Resources>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="63*"/>
+            <ColumnDefinition Width="137*"/>
+        </Grid.ColumnDefinitions>
+        <TabControl Name="MainTab" Background="#FFE5E5E5" Grid.ColumnSpan="2">
+            <TabItem Header="Службы" Name="ServicesTab">
+                <DataGrid x:Name="ServicesDataGrid" Margin="0,0,0,4" EnableRowVirtualization="True" ItemsSource="{Binding serviceControllerValuesDB,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                              AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
+                          ScrollViewer.CanContentScroll="True" SelectedItem="{Binding SelectedServiceItem}" 
+                          SelectionMode="Single" ContextMenuOpening="ServicesDataGrid_ContextMenuOpening">
+                    <DataGrid.ContextMenu>
+                        <RibbonContextMenu>
+                            <RibbonMenuItem x:Name="RibbonMenuOnItem" Header="Запустить" IsEnabled="{Binding ServiceOnEnabled,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}">
+                                <ItemsControl.InputBindings>
+                                    <MouseBinding MouseAction="LeftClick" Command="{Binding RibbonMenuOnItem_Click}" />
+                                </ItemsControl.InputBindings>
+                            </RibbonMenuItem>
+                            <RibbonMenuItem x:Name="RibbonMenuOffItem" Header="Остановить" IsEnabled="{Binding ServiceOffEnabled,UpdateSourceTrigger=PropertyChanged}">
+                                <ItemsControl.InputBindings>
+                                    <MouseBinding MouseAction="LeftClick" Command="{Binding RibbonMenuOffItem_Click}" />
+                                </ItemsControl.InputBindings>
+                            </RibbonMenuItem>
+                        </RibbonContextMenu>
+                    </DataGrid.ContextMenu>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="ID" Binding="{Binding Id}"/>
                         <DataGridTextColumn Header="Разрешение паузы" Binding="{Binding CanPauseAndContinue}" Visibility="Collapsed"/>
@@ -31,8 +42,37 @@
                         <DataGridTextColumn Header="Разрешение остановки" Binding="{Binding CanStop}" Visibility="Collapsed"/>
                         <DataGridTextColumn Header="Описание" Binding="{Binding DisplayName}"/>
                         <DataGridTextColumn Header="Имя" Binding="{Binding ServiceName}"/>
-                        <DataGridTextColumn Header="Статус" Binding="{Binding Status}"/>
-                        <DataGridTextColumn Header="Тип запуска" Binding="{Binding StartType}"/>
+                        <DataGridTextColumn Header="Статус" Binding="{Binding Status,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}">
+                            <DataGridTextColumn.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding ="{Binding Status}" Value="Stopped">
+                                            <Setter Property="Background" Value="#FFFFCCCC" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding ="{Binding Status}" Value="Running">
+                                            <Setter Property="Background" Value="#FFB6FB91" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTextColumn.CellStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="Тип запуска" Binding="{Binding StartType,UpdateSourceTrigger=PropertyChanged}">
+                            <DataGridTextColumn.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding ="{Binding StartType}" Value="Отключено">
+                                            <Setter Property="Background" Value="#FFFFCCCC" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding ="{Binding StartType}" Value="Вручную">
+                                            <Setter Property="Background" Value="#FFF5FF9C" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding ="{Binding StartType}" Value="Автоматически">
+                                            <Setter Property="Background" Value="#FFB6FB91" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTextColumn.CellStyle>
+                        </DataGridTextColumn>
                         <DataGridTextColumn Header="Тип службы" Binding="{Binding ServiceType}"/>
                     </DataGrid.Columns>
                 </DataGrid>
