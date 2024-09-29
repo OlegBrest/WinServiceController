@@ -6,33 +6,22 @@
         xmlns:local="clr-namespace:WinServiceController"
         mc:Ignorable="d"
         xmlns:vm="clr-namespace:WinServiceController.ViewModels"
-        Title="Контроллер служб, процессов и автозапуска" Height="450" Width="800">
+        Title="Контроллер служб, процессов и автозапуска" Height="450" Width="800" WindowStartupLocation="CenterScreen">
     <Window.DataContext>
         <vm:MainVM></vm:MainVM>
     </Window.DataContext>
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="63*"/>
-            <ColumnDefinition Width="137*"/>
-        </Grid.ColumnDefinitions>
         <TabControl Name="MainTab" Background="#FFE5E5E5" Grid.ColumnSpan="2">
             <TabItem Header="Службы" Name="ServicesTab">
                 <DataGrid x:Name="ServicesDataGrid" Margin="0,0,0,4" EnableRowVirtualization="True" ItemsSource="{Binding serviceControllerValuesDB,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
                               AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
                           ScrollViewer.CanContentScroll="True" SelectedItem="{Binding SelectedServiceItem}" 
                           SelectionMode="Single" ContextMenuOpening="ServicesDataGrid_ContextMenuOpening">
+                    <ItemsControl.InputBindings>
+                        <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding RibbonMenuTrackItem_Click}" CommandParameter="Service" />
+                    </ItemsControl.InputBindings>
                     <DataGrid.ContextMenu>
-                        <RibbonContextMenu>
-                            <RibbonMenuItem x:Name="RibbonMenuOnItem" Header="Запустить" IsEnabled="{Binding ServiceOnEnabled,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}">
-                                <ItemsControl.InputBindings>
-                                    <MouseBinding MouseAction="LeftClick" Command="{Binding RibbonMenuOnItem_Click}" />
-                                </ItemsControl.InputBindings>
-                            </RibbonMenuItem>
-                            <RibbonMenuItem x:Name="RibbonMenuOffItem" Header="Остановить" IsEnabled="{Binding ServiceOffEnabled,UpdateSourceTrigger=PropertyChanged}">
-                                <ItemsControl.InputBindings>
-                                    <MouseBinding MouseAction="LeftClick" Command="{Binding RibbonMenuOffItem_Click}" />
-                                </ItemsControl.InputBindings>
-                            </RibbonMenuItem>
+                        <RibbonContextMenu ItemsSource="{Binding RibbonMenuServicesItems}">
                         </RibbonContextMenu>
                     </DataGrid.ContextMenu>
                     <DataGrid.Columns>
@@ -76,6 +65,28 @@
                         <DataGridTextColumn Header="Тип службы" Binding="{Binding ServiceType}"/>
                     </DataGrid.Columns>
                 </DataGrid>
+            </TabItem>
+            <TabItem Header="Процессы">
+                <Grid>
+                    <DataGrid ItemsSource="{Binding processValuesDB}" SelectedItem="{Binding SelectedProcessItem}">
+                        <ItemsControl.InputBindings>
+                            <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding RibbonMenuTrackItem_Click}" CommandParameter="File" />
+                        </ItemsControl.InputBindings>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Отслеживание">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition Height="40"/>
+                    </Grid.RowDefinitions>
+                    <DataGrid Grid.Row="0" ItemsSource="{Binding trackedItemsDB}" CanUserDeleteRows="False" IsReadOnly="True" CanUserAddRows="False" SelectedItem="{Binding SelectedTrackedItem}">
+                        <ItemsControl.InputBindings>
+                            <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding TrackDataGrid_MouseDoubleClick}" />
+                        </ItemsControl.InputBindings>
+                    </DataGrid>
+                </Grid>
             </TabItem>
         </TabControl>
     </Grid>

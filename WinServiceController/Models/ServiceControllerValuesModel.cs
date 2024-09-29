@@ -12,7 +12,7 @@ using WinServiceController.Utils;
 
 namespace WinServiceController.Models
 {
-    public class ServiceControllerValuesDB : NotifyUIBase
+    public class ServiceControllerValuesModel : NotifyUIBase
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -53,7 +53,18 @@ namespace WinServiceController.Models
 
         public ServiceType ServiceType { get; set; }
         public ISite? Site { get; set; }
+
         private ServiceStartMode _StartType;
+        public ServiceStartMode serviceStartMode
+        {
+            get => _StartType;
+            set
+            {
+                _StartType = value;
+                onPropertyChanged(nameof(serviceStartMode));
+                onPropertyChanged(nameof(StartType));
+            }
+        }
         public string StartType
         {
             get
@@ -92,7 +103,7 @@ namespace WinServiceController.Models
             }
         }
 
-        public ServiceControllerValuesDB(ServiceController scs, int i = -1)
+        public ServiceControllerValuesModel(ServiceController scs, int i = -1)
         {
             import(scs, i);
         }

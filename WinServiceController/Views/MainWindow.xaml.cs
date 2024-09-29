@@ -24,9 +24,5 @@ namespace WinServiceController
             //(sender as DataGrid).ContextMenu = datacontext.RibbonServicesContextMenu;
         }
 
-        private void RibbonMenuOnItem_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
     }
 }

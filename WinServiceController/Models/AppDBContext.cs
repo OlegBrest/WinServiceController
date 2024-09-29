@@ -7,11 +7,12 @@ namespace WinServiceController.Models
     /// </summary>
     public class AppDBContext : DbContext
     {
-        public DbSet<Models.ServiceControllerValuesDB> Services { get; set; } = null;
+        //        public DbSet<Models.ServiceControllerValuesDB> Services { get; set; } = null;
+        public DbSet<Models.TrackedItemsModel> TrackedItems { get; set; } = null;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite("Data Source=ServicesDB.db")
+            optionsBuilder.UseSqlite("Data Source=Tracked.db")
                 .EnableSensitiveDataLogging();
         }
     }
