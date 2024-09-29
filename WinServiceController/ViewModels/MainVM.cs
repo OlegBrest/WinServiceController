@@ -218,20 +218,24 @@ namespace WinServiceController.ViewModels
             for (int indx = 0; indx < servicesCount; indx++)
             {
                 ServiceControllerValuesModel serviceController = serviceControllerValuesDB[indx];
-                if ((serviceController.ServiceName == serviceName) && (serviceController.DisplayName == displayName))
+                if (serviceController != null)
                 {
-                    findedID = indx;
+                    if ((serviceController.ServiceName == serviceName) && (serviceController.DisplayName == displayName))
+                    {
+                        findedID = indx;
+                    }
+                    if (serviceController.Id >= maxId)
+                    {
+                        maxId = serviceController.Id;
+                    }
                 }
-                if (serviceController.Id >= maxId)
-                {
-                    maxId = serviceController.Id;
-                }
+                else findedID = -10;
             }
             if (findedID == -1)
             {
                 serviceControllerValuesDB.Add(new ServiceControllerValuesModel(value, i == -1 ? ++maxId : i));
             }
-            else
+            else if (findedID!=-10)
             {
                 ServiceController sc = new ServiceController(value.ServiceName);
                 serviceControllerValuesDB[findedID].Status = sc.Status;
