@@ -20,6 +20,7 @@ using System.Windows.Media.Animation;
 using WinServiceController.Models;
 using WinServiceController.Utils;
 using WinServiceController.Views;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace WinServiceController.ViewModels
 {
@@ -28,6 +29,8 @@ namespace WinServiceController.ViewModels
         #region variables
         AppDBContext dBContext = new AppDBContext();
 
+        bool processesRunning = false;
+        bool servicesesRunning = false;
         public System.Timers.Timer timer = new System.Timers.Timer(500);
 
         #region Services
@@ -56,7 +59,6 @@ namespace WinServiceController.ViewModels
             }
         }
         #endregion
-
         #region Processes
         private ObservableCollection<ProcessessModel> _processValuesDB = new ObservableCollection<ProcessessModel>();
         public ObservableCollection<ProcessessModel> processValuesDB
@@ -122,9 +124,44 @@ namespace WinServiceController.ViewModels
         }
         private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
         {
-            FillServiceArray(ServiceController.GetServices());
-            FillProcessArray(Process.GetProcesses());
 
+            if (!servicesesRunning)
+            {
+                servicesesRunning = true;
+                Thread servThread = new Thread(() =>
+                {
+                    try
+                    {
+
+                        FillServiceArray(ServiceController.GetServices());
+                    }
+                    catch { }
+                    finally
+                    {
+                        servicesesRunning = false;
+                    }
+                });
+                servThread.Start();
+            }
+
+            if (!processesRunning)
+            {
+                processesRunning = true;
+                Thread procThread = new Thread(() =>
+                {
+                    try
+                    {
+
+                        FillProcessArray(Process.GetProcesses());
+                    }
+                    catch { }
+                    finally
+                    {
+                        processesRunning = false;
+                    }
+                });
+                procThread.Start();
+            }
             CheckTracks();
             //App.Current.Dispatcher.Invoke((Action)delegate
             //{
@@ -133,69 +170,170 @@ namespace WinServiceController.ViewModels
         }
         private void CheckTracks()
         {
-            foreach (TrackedItemsModel trackItem in trackedItemsDB)
+            //foreach (TrackedItemsModel trackItem in trackedItemsDB)
+            Parallel.ForEach(trackedItemsDB, trackItem =>
             {
-                if (trackItem.Status == ServiceControllerStatus.Running)
+                lock (trackedItemsDB)
                 {
-                    if (trackItem.Type.Equals("Service"))
+                    if (trackItem.Status == ServiceControllerStatus.Running)
                     {
-                        ServiceControllerValuesModel? service = serviceControllerValuesDB.FirstOrDefault(sr => (sr.ServiceName == trackItem.Title));
-                        if (service != null)
+                        if (trackItem.Type.Equals("Service"))
                         {
-                            if ((service.Status != ServiceControllerStatus.Running) && trackItem.KeepRunned)
+                            ServiceControllerValuesModel? service = serviceControllerValuesDB.FirstOrDefault(sr => (sr.ServiceName == trackItem.Title));
+                            if (service != null)
                             {
-                                try
+                                if ((service.Status != ServiceControllerStatus.Running) && trackItem.KeepRunned)
                                 {
-                                    ServiceController sc = new ServiceController(service.ServiceName);
-                                    sc.Start();
+                                    try
+                                    {
+                                        ServiceController sc = new ServiceController(service.ServiceName);
+                                        sc.Start();
+                                        SetExecuteTime(trackItem);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        // MessageBox.Show(ex.Message);
+                                    }
                                 }
-                                catch (Exception ex)
+                                else if ((service.Status != ServiceControllerStatus.Stopped) && trackItem.KeepStopped)
                                 {
-                                    // MessageBox.Show(ex.Message);
+                                    try
+                                    {
+                                        ServiceController sc = new ServiceController(service.ServiceName);
+                                        sc.Stop();
+                                        SetExecuteTime(trackItem);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //MessageBox.Show(ex.Message);
+                                    }
                                 }
-                            }
-                            else if ((service.Status != ServiceControllerStatus.Stopped) && trackItem.KeepStopped)
-                            {
-                                try
+                                else if ((trackItem.CustomControl != string.Empty) && (trackItem.NextExecuteTime < DateTime.Now))
                                 {
-                                    ServiceController sc = new ServiceController(service.ServiceName);
-                                    sc.Stop();
-                                }
-                                catch (Exception ex)
-                                {
-                                    //MessageBox.Show(ex.Message);
+                                    Thread customThread = new Thread(() =>
+                                    {
+                                        string[] commands = trackItem.CustomControl.Split('!');
+                                        foreach (string command in commands)
+                                        {
+                                            string[] controls = command.Split('|');
+                                            switch (controls[0])
+                                            {
+                                                case "restart":
+                                                    RestartService(service, command,trackItem); break;
+                                                case "killprocname":
+                                                    KillProcessName(command); break;
+                                            }
+                                        }
+                                    });
+                                    customThread.Start();
                                 }
                             }
                         }
-                    }
-                    if (trackItem.Type.Equals("File"))
-                    {
-                        ProcessessModel? process = processValuesDB.FirstOrDefault(pr => (pr.FullFilePath == trackItem.FilePath));
-                        if (process != null)
+                        if (trackItem.Type.Equals("File"))
                         {
-                            if (trackItem.KeepStopped)
+                            ProcessessModel? process = processValuesDB.FirstOrDefault(pr => (pr.FullFilePath == trackItem.FilePath));
+                            if (process != null)
                             {
-                                try
+                                if (trackItem.KeepStopped)
                                 {
-                                    Process.GetProcessById(process.processId).Kill();
-                                }
-                                catch (Exception ex)
-                                {
-                                    MessageBox.Show(ex.Message);
+                                    try
+                                    {
+                                        Process.GetProcessById(process.processId).Kill();
+                                        SetExecuteTime(trackItem);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //  MessageBox.Show(ex.Message);
+                                    }
                                 }
                             }
-                        }
-                        else if (trackItem.KeepRunned)
-                        {
-                            Process prc = new Process();
-                            prc.StartInfo.FileName = trackItem.FilePath;
-                            prc.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
-                            prc.Start();
+                            else if (trackItem.KeepRunned)
+                            {
+                                Process prc = new Process();
+                                prc.StartInfo.FileName = trackItem.FilePath;
+                                prc.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
+                                prc.Start();
+                                SetExecuteTime(trackItem);
+                            }
                         }
                     }
                 }
-            }
+            });
+        }
 
+
+        private void KillProcessName(string command)
+        {
+            string[] controls = command.Split('|');
+            if (controls.Length > 1)
+            {
+                Process[] processes = Process.GetProcessesByName(controls[1]);
+                foreach (Process process in processes)
+                {
+                    process.Kill();
+                }
+            }
+        }
+
+        private void RestartService(ServiceControllerValuesModel service, string trackCommand, TrackedItemsModel track)
+        {
+            string[] controls = trackCommand.Split('|');
+            if (controls.Length > 1)
+            {
+                DateTime nextStart = DateTime.Now;
+                string[] timers = controls[1].Split(':');
+                if (timers.Length > 1)
+                {
+                    int val = 10;
+                    int.TryParse(timers[0], out val);
+                    switch (timers[1])
+                    {
+                        case "s":
+                            nextStart = DateTime.Now.AddSeconds(val);
+                            break;
+                        case "m":
+                            nextStart = DateTime.Now.AddMinutes(val);
+                            break;
+                        case "h":
+                            nextStart = DateTime.Now.AddHours(val);
+                            break;
+                        case "M":
+                            nextStart = DateTime.Now.AddMonths(val);
+                            break;
+                        case "Y":
+                            nextStart = DateTime.Now.AddYears(val);
+                            break;
+                        default:
+                            nextStart = DateTime.Now.AddMinutes(val);
+                            break;
+                    }
+                }
+                SetExecuteTime(track, nextStart);
+                ServiceController sc = new ServiceController(service.ServiceName);
+                try
+                {
+                    sc.Stop();
+                    Thread.Sleep(1000);
+                }
+                catch { }
+                try
+                {
+                    sc.Start();
+                }
+                catch { }
+            }
+        }
+
+        private void SetExecuteTime(TrackedItemsModel track, DateTime? nextExecute = null)
+        {
+            DateTime nextStart = DateTime.Now;
+            if (nextExecute != null)
+            {
+                nextStart = (DateTime)nextExecute;
+            }
+            track.PreviousExecuteTime = DateTime.Now;
+            track.NextExecuteTime = nextStart;
+            dBContext.SaveChanges();
         }
 
         #region Services
@@ -235,7 +373,7 @@ namespace WinServiceController.ViewModels
             {
                 serviceControllerValuesDB.Add(new ServiceControllerValuesModel(value, i == -1 ? ++maxId : i));
             }
-            else if (findedID!=-10)
+            else if (findedID != -10)
             {
                 ServiceController sc = new ServiceController(value.ServiceName);
                 serviceControllerValuesDB[findedID].Status = sc.Status;
@@ -279,7 +417,6 @@ namespace WinServiceController.ViewModels
                 {
                     processValuesDB.Remove(delitem);
                 });
-
             }
             foreach (Process process in processes)
             {
@@ -297,7 +434,6 @@ namespace WinServiceController.ViewModels
                 ProcessPath = value.MainModule.FileName;
             }
             catch { }
-
             if (ProcessPath != string.Empty)
             {
                 ProcessessModel process = null;

@@ -100,5 +100,28 @@ namespace WinServiceController.Models
             get => _CustomControl;
             set { _CustomControl = value; onPropertyChanged(nameof(CustomControl));}
         }
+
+        private DateTime _PreviousExecuteTime = DateTime.Now;
+        public DateTime PreviousExecuteTime 
+        {
+            get => _PreviousExecuteTime;
+            set
+            {
+                _PreviousExecuteTime = value;
+                onPropertyChanged(nameof(PreviousExecuteTime));
+            }
+        }
+
+        private DateTime _NextExecuteTime = DateTime.Now;
+        public DateTime NextExecuteTime
+        {
+            get => _NextExecuteTime;
+            set
+            {
+                _NextExecuteTime = value;
+                onPropertyChanged(nameof(NextExecuteTime));
+            }
+        }
+
     }
 }
