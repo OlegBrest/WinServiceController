@@ -9,16 +9,20 @@
     <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
     <Platforms>AnyCPU;x64</Platforms>
     <StartupObject></StartupObject>
+    <ApplicationIcon>Images\backup.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.6" />
-    <PackageReference Include="System.Data.SQLite" Version="1.0.118" />
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
+    <Content Include="Images\backup.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Images\" />
+    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.6" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.118" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
   </ItemGroup>
 
 </Project>

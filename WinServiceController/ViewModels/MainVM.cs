@@ -29,6 +29,7 @@ namespace WinServiceController.ViewModels
         #region variables
         AppDBContext dBContext = new AppDBContext();
 
+        bool need2closing = false;
         bool processesRunning = false;
         bool servicesesRunning = false;
         public System.Timers.Timer timer = new System.Timers.Timer(500);
@@ -661,6 +662,14 @@ namespace WinServiceController.ViewModels
                     MessageBox.Show(ex.Message);
                 }
                 DBLoad();
+            }
+        }
+
+        public void CloseCanceling(System.ComponentModel.CancelEventArgs e)
+        {
+            if (need2closing)
+            {
+                e.Cancel = true;
             }
         }
     }

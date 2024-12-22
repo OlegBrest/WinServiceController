@@ -15,7 +15,7 @@ namespace WinServiceController
         public MainWindow()
         {
             //InitializeComponent();
-            datacontext = (MainVM) this.DataContext;
+            datacontext = (MainVM)this.DataContext;
         }
 
         private void ServicesDataGrid_ContextMenuOpening(object sender, ContextMenuEventArgs e)
@@ -24,5 +24,9 @@ namespace WinServiceController
             //(sender as DataGrid).ContextMenu = datacontext.RibbonServicesContextMenu;
         }
 
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            e.Cancel = true;
+        }
     }
 }

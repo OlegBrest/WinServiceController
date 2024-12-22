@@ -12,6 +12,13 @@ namespace WinServiceController.Utils
         private Action<object> _execute;
         private Func<object, bool> _canExecute;
 
+        public Action CommandAction { get; set; }
+        public Func<bool> CanExecuteFunc { get; set; }
+
+        public DelegateCommand()
+        {
+        }
+
         public DelegateCommand(Action<object> execute, Func<object, bool> canExecute=null)
         {
             _execute = execute;
@@ -26,13 +33,23 @@ namespace WinServiceController.Utils
 
         public bool CanExecute(object parameter)
         {
-            return (this._canExecute == null || this._canExecute(parameter));
+            if (CanExecuteFunc != null) return CanExecuteFunc();
+            else
+            {
+                return (this._canExecute == null || this._canExecute(parameter));
+            }
         }
 
         public void Execute(object parameter)
         {
-            this._execute(parameter);
+            if (CommandAction!=null) CommandAction();
+            if (this._execute != null) this._execute(parameter);
         }
 
+        public event EventHandler CanExecuteChanged
+        {
+            add { CommandManager.RequerySuggested += value; }
+            remove { CommandManager.RequerySuggested -= value; }
+        }
     }
 }
